@@ -319,7 +319,7 @@
         <div>
           <div class="flex items-center space-x-2">
             <span class="px-2.5 py-0.5 rounded text-xs font-bold bg-indigo-100 text-indigo-700">PES SE2026 - SLS</span>
-            <span class="text-xs text-slate-500">38 Sampel SLS &bull; Beban Penugasan FASIH: 6.479 Responden</span>
+            <span class="text-xs text-slate-500">38 Sampel SLS &bull; Beban Penugasan FASIH: <span id="sls-tab-beban">6.479</span> Responden</span>
           </div>
           <h2 class="text-lg font-bold text-slate-800 mt-1">Daftar Alokasi & Petugas SLS (Pangkal Pinang)</h2>
           <p class="text-xs sm:text-sm text-slate-500">Data alokasi beban dan capaian real-time per Satuan Lingkungan Setempat.</p>
@@ -669,19 +669,24 @@
             if (data.sls_data && Array.isArray(data.sls_data) && data.sls_data.length > 0) {
               data.sls_data.forEach(cloudSls => {
                 const foundSls = slsData.find(s => s.kodePpl === cloudSls.kodePpl || (s.nama && s.nama.toLowerCase() === (cloudSls.nama || "").toLowerCase()));
-                if (foundSls) {
+                // Hanya terima baris cloud berformat baru (punya kolom Dicacah/Approve); baris lama dilewati
+                const isNewFmt = cloudSls.dicacah !== undefined || cloudSls.approve !== undefined;
+                if (foundSls && isNewFmt) {
                   if (cloudSls.target) foundSls.target = Number(cloudSls.target);
                   if (cloudSls.realisasi !== undefined) foundSls.realisasi = Number(cloudSls.realisasi);
-                  foundSls.fasihDetail = {
-                    completed: Number(cloudSls.completed) || 0,
-                    submitted: Number(cloudSls.submitted) || 0,
-                    draft: Number(cloudSls.draft) || 0,
-                    rejected: Number(cloudSls.rejected) || 0,
-                    open: Number(cloudSls.open) || 0
-                  };
+                  foundSls.fasihDetail = {};
+                  SLS_STATUS_FIELDS.forEach(f => { foundSls.fasihDetail[f.key] = Number(cloudSls[f.key]) || 0; });
                   updatedCount++;
                 }
               });
+            }
+
+            // 2b. Baris "belum ada petugas" (format baru saja)
+            if (data.sls_unassigned && (data.sls_unassigned.dicacah !== undefined || data.sls_unassigned.approve !== undefined)) {
+              const cu = data.sls_unassigned;
+              const du = {};
+              SLS_STATUS_FIELDS.forEach(f => { du[f.key] = Number(cu[f.key]) || 0; });
+              slsUnassigned = { target: Number(cu.target) || 0, realisasi: Number(cu.realisasi) || 0, detail: du };
             }
 
             // 3. Update data Petugas UB (5 PPL) dari Google Sheets jika ada
@@ -781,7 +786,8 @@
       try {
         const payload = {
           action: "sync_all",
-          sls_items: slsData,
+          sls_items: slsCloudItems(),
+          unassigned: slsUnassigned,
           ub_items: ubSampelData,
           ub_petugas: ubPetugasData
         };
@@ -932,14 +938,18 @@
             "hp": "083193728162",
             "kodePml": "PML-01",
             "pml": "Ennie Ratnasari",
-            "target": 332,
-            "realisasi": 27,
+            "target": 460,
+            "realisasi": 320,
             "fasihDetail": {
-                  "completed": 19,
-                  "submitted": 8,
-                  "draft": 30,
-                  "rejected": 0,
-                  "open": 275
+                  "open": 0,
+                  "draft": 139,
+                  "dicacah": 321,
+                  "submit": 6,
+                  "approve": 189,
+                  "complete": 124,
+                  "edit": 0,
+                  "revoke": 1,
+                  "reject": 1
             },
             "alokasi": [
                   {
@@ -976,14 +986,18 @@
             "hp": "082170922296",
             "kodePml": "PML-01",
             "pml": "Ennie Ratnasari",
-            "target": 382,
-            "realisasi": 16,
+            "target": 491,
+            "realisasi": 339,
             "fasihDetail": {
-                  "completed": 10,
-                  "submitted": 6,
-                  "draft": 29,
-                  "rejected": 1,
-                  "open": 336
+                  "open": 53,
+                  "draft": 97,
+                  "dicacah": 341,
+                  "submit": 13,
+                  "approve": 128,
+                  "complete": 198,
+                  "edit": 0,
+                  "revoke": 0,
+                  "reject": 2
             },
             "alokasi": [
                   {
@@ -1020,14 +1034,18 @@
             "hp": "083863294884",
             "kodePml": "PML-01",
             "pml": "Ennie Ratnasari",
-            "target": 336,
-            "realisasi": 7,
+            "target": 449,
+            "realisasi": 400,
             "fasihDetail": {
-                  "completed": 6,
-                  "submitted": 1,
-                  "draft": 45,
-                  "rejected": 3,
-                  "open": 281
+                  "open": 0,
+                  "draft": 44,
+                  "dicacah": 405,
+                  "submit": 16,
+                  "approve": 291,
+                  "complete": 93,
+                  "edit": 0,
+                  "revoke": 0,
+                  "reject": 5
             },
             "alokasi": [
                   {
@@ -1064,14 +1082,18 @@
             "hp": "088286821668",
             "kodePml": "PML-01",
             "pml": "Ennie Ratnasari",
-            "target": 245,
-            "realisasi": 24,
+            "target": 266,
+            "realisasi": 254,
             "fasihDetail": {
-                  "completed": 19,
-                  "submitted": 5,
-                  "draft": 94,
-                  "rejected": 7,
-                  "open": 120
+                  "open": 0,
+                  "draft": 8,
+                  "dicacah": 258,
+                  "submit": 12,
+                  "approve": 153,
+                  "complete": 89,
+                  "edit": 0,
+                  "revoke": 0,
+                  "reject": 4
             },
             "alokasi": [
                   {
@@ -1095,14 +1117,18 @@
             "hp": "085373772042",
             "kodePml": "PML-02",
             "pml": "Marliya",
-            "target": 236,
-            "realisasi": 36,
+            "target": 284,
+            "realisasi": 226,
             "fasihDetail": {
-                  "completed": 28,
-                  "submitted": 8,
+                  "open": 55,
                   "draft": 0,
-                  "rejected": 2,
-                  "open": 198
+                  "dicacah": 229,
+                  "submit": 153,
+                  "approve": 53,
+                  "complete": 20,
+                  "edit": 0,
+                  "revoke": 0,
+                  "reject": 3
             },
             "alokasi": [
                   {
@@ -1126,14 +1152,18 @@
             "hp": "085719930178",
             "kodePml": "PML-02",
             "pml": "Marliya",
-            "target": 137,
-            "realisasi": 57,
+            "target": 431,
+            "realisasi": 431,
             "fasihDetail": {
-                  "completed": 51,
-                  "submitted": 6,
+                  "open": 0,
                   "draft": 0,
-                  "rejected": 1,
-                  "open": 79
+                  "dicacah": 431,
+                  "submit": 0,
+                  "approve": 80,
+                  "complete": 351,
+                  "edit": 0,
+                  "revoke": 0,
+                  "reject": 0
             },
             "alokasi": [
                   {
@@ -1170,14 +1200,18 @@
             "hp": "083841228290",
             "kodePml": "PML-02",
             "pml": "Marliya",
-            "target": 296,
-            "realisasi": 80,
+            "target": 422,
+            "realisasi": 422,
             "fasihDetail": {
-                  "completed": 80,
-                  "submitted": 0,
+                  "open": 0,
                   "draft": 0,
-                  "rejected": 1,
-                  "open": 215
+                  "dicacah": 422,
+                  "submit": 0,
+                  "approve": 3,
+                  "complete": 419,
+                  "edit": 0,
+                  "revoke": 0,
+                  "reject": 0
             },
             "alokasi": [
                   {
@@ -1214,14 +1248,18 @@
             "hp": "085366660920",
             "kodePml": "PML-02",
             "pml": "Marliya",
-            "target": 428,
-            "realisasi": 67,
+            "target": 480,
+            "realisasi": 480,
             "fasihDetail": {
-                  "completed": 45,
-                  "submitted": 22,
+                  "open": 0,
                   "draft": 0,
-                  "rejected": 4,
-                  "open": 357
+                  "dicacah": 480,
+                  "submit": 0,
+                  "approve": 214,
+                  "complete": 266,
+                  "edit": 0,
+                  "revoke": 0,
+                  "reject": 0
             },
             "alokasi": [
                   {
@@ -1245,14 +1283,18 @@
             "hp": "081274667003",
             "kodePml": "PML-03",
             "pml": "Luqman Hakim",
-            "target": 173,
-            "realisasi": 1,
+            "target": 313,
+            "realisasi": 219,
             "fasihDetail": {
-                  "completed": 0,
-                  "submitted": 1,
-                  "draft": 66,
-                  "rejected": 0,
-                  "open": 106
+                  "open": 22,
+                  "draft": 55,
+                  "dicacah": 236,
+                  "submit": 60,
+                  "approve": 107,
+                  "complete": 52,
+                  "edit": 0,
+                  "revoke": 0,
+                  "reject": 17
             },
             "alokasi": [
                   {
@@ -1289,14 +1331,18 @@
             "hp": "08218004489",
             "kodePml": "PML-03",
             "pml": "Luqman Hakim",
-            "target": 340,
-            "realisasi": 128,
+            "target": 521,
+            "realisasi": 521,
             "fasihDetail": {
-                  "completed": 0,
-                  "submitted": 128,
+                  "open": 0,
                   "draft": 0,
-                  "rejected": 1,
-                  "open": 211
+                  "dicacah": 521,
+                  "submit": 0,
+                  "approve": 167,
+                  "complete": 354,
+                  "edit": 0,
+                  "revoke": 0,
+                  "reject": 0
             },
             "alokasi": [
                   {
@@ -1333,14 +1379,18 @@
             "hp": "082180004062",
             "kodePml": "PML-03",
             "pml": "Luqman Hakim",
-            "target": 198,
-            "realisasi": 2,
+            "target": 312,
+            "realisasi": 195,
             "fasihDetail": {
-                  "completed": 0,
-                  "submitted": 2,
-                  "draft": 34,
-                  "rejected": 0,
-                  "open": 162
+                  "open": 74,
+                  "draft": 36,
+                  "dicacah": 202,
+                  "submit": 14,
+                  "approve": 163,
+                  "complete": 18,
+                  "edit": 0,
+                  "revoke": 0,
+                  "reject": 7
             },
             "alokasi": [
                   {
@@ -1377,14 +1427,18 @@
             "hp": "085758724376",
             "kodePml": "PML-03",
             "pml": "Luqman Hakim",
-            "target": 319,
-            "realisasi": 22,
+            "target": 453,
+            "realisasi": 453,
             "fasihDetail": {
-                  "completed": 0,
-                  "submitted": 22,
-                  "draft": 39,
-                  "rejected": 0,
-                  "open": 258
+                  "open": 0,
+                  "draft": 0,
+                  "dicacah": 453,
+                  "submit": 0,
+                  "approve": 150,
+                  "complete": 303,
+                  "edit": 0,
+                  "revoke": 0,
+                  "reject": 0
             },
             "alokasi": [
                   {
@@ -1421,14 +1475,18 @@
             "hp": "085381183213",
             "kodePml": "PML-04",
             "pml": "Cici Ofdadewi",
-            "target": 244,
-            "realisasi": 67,
+            "target": 349,
+            "realisasi": 346,
             "fasihDetail": {
-                  "completed": 20,
-                  "submitted": 47,
-                  "draft": 12,
-                  "rejected": 0,
-                  "open": 165
+                  "open": 0,
+                  "draft": 3,
+                  "dicacah": 346,
+                  "submit": 0,
+                  "approve": 146,
+                  "complete": 200,
+                  "edit": 0,
+                  "revoke": 0,
+                  "reject": 0
             },
             "alokasi": [
                   {
@@ -1465,14 +1523,18 @@
             "hp": "082280887907",
             "kodePml": "PML-04",
             "pml": "Cici Ofdadewi",
-            "target": 262,
-            "realisasi": 68,
+            "target": 442,
+            "realisasi": 433,
             "fasihDetail": {
-                  "completed": 19,
-                  "submitted": 49,
-                  "draft": 27,
-                  "rejected": 1,
-                  "open": 166
+                  "open": 0,
+                  "draft": 9,
+                  "dicacah": 433,
+                  "submit": 0,
+                  "approve": 198,
+                  "complete": 235,
+                  "edit": 0,
+                  "revoke": 0,
+                  "reject": 0
             },
             "alokasi": [
                   {
@@ -1509,14 +1571,18 @@
             "hp": "085814181142",
             "kodePml": "PML-04",
             "pml": "Cici Ofdadewi",
-            "target": 284,
-            "realisasi": 54,
+            "target": 445,
+            "realisasi": 352,
             "fasihDetail": {
-                  "completed": 11,
-                  "submitted": 43,
-                  "draft": 11,
-                  "rejected": 0,
-                  "open": 219
+                  "open": 3,
+                  "draft": 44,
+                  "dicacah": 398,
+                  "submit": 79,
+                  "approve": 150,
+                  "complete": 123,
+                  "edit": 0,
+                  "revoke": 0,
+                  "reject": 46
             },
             "alokasi": [
                   {
@@ -1553,14 +1619,18 @@
             "hp": "085268808854",
             "kodePml": "PML-05",
             "pml": "Desi Pazaria",
-            "target": 465,
-            "realisasi": 81,
+            "target": 586,
+            "realisasi": 585,
             "fasihDetail": {
-                  "completed": 77,
-                  "submitted": 4,
-                  "draft": 16,
-                  "rejected": 1,
-                  "open": 367
+                  "open": 0,
+                  "draft": 1,
+                  "dicacah": 585,
+                  "submit": 0,
+                  "approve": 201,
+                  "complete": 384,
+                  "edit": 0,
+                  "revoke": 0,
+                  "reject": 0
             },
             "alokasi": [
                   {
@@ -1597,14 +1667,18 @@
             "hp": "089633773529",
             "kodePml": "PML-05",
             "pml": "Desi Pazaria",
-            "target": 401,
-            "realisasi": 27,
+            "target": 487,
+            "realisasi": 487,
             "fasihDetail": {
-                  "completed": 27,
-                  "submitted": 0,
-                  "draft": 18,
-                  "rejected": 1,
-                  "open": 355
+                  "open": 0,
+                  "draft": 0,
+                  "dicacah": 487,
+                  "submit": 0,
+                  "approve": 223,
+                  "complete": 264,
+                  "edit": 0,
+                  "revoke": 0,
+                  "reject": 0
             },
             "alokasi": [
                   {
@@ -1628,14 +1702,18 @@
             "hp": "082178289998",
             "kodePml": "PML-05",
             "pml": "Desi Pazaria",
-            "target": 371,
-            "realisasi": 86,
+            "target": 450,
+            "realisasi": 450,
             "fasihDetail": {
-                  "completed": 77,
-                  "submitted": 9,
-                  "draft": 33,
-                  "rejected": 0,
-                  "open": 252
+                  "open": 0,
+                  "draft": 0,
+                  "dicacah": 450,
+                  "submit": 0,
+                  "approve": 6,
+                  "complete": 444,
+                  "edit": 0,
+                  "revoke": 0,
+                  "reject": 0
             },
             "alokasi": [
                   {
@@ -1672,14 +1750,18 @@
             "hp": "083861897543",
             "kodePml": "PML-06",
             "pml": "Siti Artimah",
-            "target": 270,
-            "realisasi": 33,
+            "target": 336,
+            "realisasi": 326,
             "fasihDetail": {
-                  "completed": 21,
-                  "submitted": 12,
-                  "draft": 0,
-                  "rejected": 0,
-                  "open": 237
+                  "open": 0,
+                  "draft": 8,
+                  "dicacah": 328,
+                  "submit": 0,
+                  "approve": 64,
+                  "complete": 262,
+                  "edit": 0,
+                  "revoke": 0,
+                  "reject": 2
             },
             "alokasi": [
                   {
@@ -1703,14 +1785,18 @@
             "hp": "085840953848",
             "kodePml": "PML-06",
             "pml": "Siti Artimah",
-            "target": 335,
-            "realisasi": 14,
+            "target": 398,
+            "realisasi": 372,
             "fasihDetail": {
-                  "completed": 13,
-                  "submitted": 1,
-                  "draft": 34,
-                  "rejected": 2,
-                  "open": 285
+                  "open": 0,
+                  "draft": 25,
+                  "dicacah": 373,
+                  "submit": 17,
+                  "approve": 110,
+                  "complete": 245,
+                  "edit": 0,
+                  "revoke": 0,
+                  "reject": 1
             },
             "alokasi": [
                   {
@@ -1734,14 +1820,18 @@
             "hp": "0895401272871",
             "kodePml": "PML-06",
             "pml": "Siti Artimah",
-            "target": 284,
-            "realisasi": 6,
+            "target": 440,
+            "realisasi": 287,
             "fasihDetail": {
-                  "completed": 6,
-                  "submitted": 0,
+                  "open": 126,
                   "draft": 0,
-                  "rejected": 8,
-                  "open": 270
+                  "dicacah": 314,
+                  "submit": 0,
+                  "approve": 46,
+                  "complete": 241,
+                  "edit": 0,
+                  "revoke": 0,
+                  "reject": 27
             },
             "alokasi": [
                   {
@@ -1778,14 +1868,18 @@
             "hp": "081274099520",
             "kodePml": "PML-06",
             "pml": "Siti Artimah",
-            "target": 277,
-            "realisasi": 28,
+            "target": 405,
+            "realisasi": 355,
             "fasihDetail": {
-                  "completed": 16,
-                  "submitted": 12,
-                  "draft": 43,
-                  "rejected": 5,
-                  "open": 201
+                  "open": 7,
+                  "draft": 33,
+                  "dicacah": 365,
+                  "submit": 2,
+                  "approve": 115,
+                  "complete": 238,
+                  "edit": 0,
+                  "revoke": 0,
+                  "reject": 10
             },
             "alokasi": [
                   {
@@ -1819,6 +1913,8 @@
 ];
 
     // 38 SAMPEL USAHA BESAR (UB)
+    const DEFAULT_SLS_UNASSIGNED = {"target": 81, "realisasi": 46, "detail": {"open": 0, "draft": 33, "dicacah": 48, "submit": 33, "approve": 13, "complete": 0, "edit": 0, "revoke": 0, "reject": 2}};
+
     const DEFAULT_UB_PETUGAS = [
       {
             "nama": "Adi Dirgantara",
@@ -1940,12 +2036,111 @@
     let currentChartMode = 'SLS';
     let pendingExcelPplSummary = null;
 
+    // ==========================================
+    // STATUS FASIH PER PETUGAS SLS (dari kolom Excel)
+    // Selesai = DIOLAH, Beban = ASSIGNED, % = DIOLAH / ASSIGNED x 100
+    // ==========================================
+    const SLS_STATUS_FIELDS = [
+      { key: "open",     label: "Open",     box: "bg-slate-50 border-slate-200 text-slate-700",   title: "Open: belum dikerjakan" },
+      { key: "draft",    label: "Draft",    box: "bg-amber-50 border-amber-200 text-amber-700",   title: "Draft di PCL" },
+      { key: "dicacah",  label: "Dicacah",  box: "bg-sky-50 border-sky-200 text-sky-700",         title: "Sudah dicacah" },
+      { key: "submit",   label: "Submit",   box: "bg-blue-50 border-blue-200 text-blue-700",      title: "Terkirim dari PCL" },
+      { key: "approve",  label: "Approve",  box: "bg-teal-50 border-teal-200 text-teal-700",      title: "Approve PML" },
+      { key: "complete", label: "Complete", box: "bg-emerald-50 border-emerald-200 text-emerald-700", title: "Complete" },
+      { key: "edit",     label: "Edit",     box: "bg-violet-50 border-violet-200 text-violet-700", title: "Edit" },
+      { key: "revoke",   label: "Revoke",   box: "bg-orange-50 border-orange-200 text-orange-700", title: "Revoke" },
+      { key: "reject",   label: "Reject",   box: "bg-rose-50 border-rose-200 text-rose-700",      title: "Reject / ditolak" }
+    ];
+
+    function getSlsDetail(p) {
+      const d = (p && p.fasihDetail) || {};
+      const legacy = { complete: d.completed, submit: d.submitted, reject: d.rejected };
+      const out = {};
+      SLS_STATUS_FIELDS.forEach(f => {
+        const v = d[f.key] !== undefined ? d[f.key] : legacy[f.key];
+        out[f.key] = Number(v) || 0;
+      });
+      return out;
+    }
+
+    function slsPct(p) {
+      const t = Number(p.target) || 0;
+      const r = Number(p.realisasi) || 0;
+      return t > 0 ? (r / t * 100).toFixed(1) : "0.0";
+    }
+
+    function slsStatusGridHtml(detail) {
+      return `<div class="grid grid-cols-3 gap-1.5">` + SLS_STATUS_FIELDS.map(f => `
+        <div class="rounded-lg border ${f.box} px-1.5 py-1.5 text-center" title="${f.title}">
+          <div class="text-sm font-extrabold leading-none">${detail[f.key].toLocaleString("id-ID")}</div>
+          <div class="text-[10px] font-semibold mt-1 leading-none">${f.label}</div>
+        </div>`).join("") + `</div>`;
+    }
+
+    function slsStatusBadgesHtml(detail) {
+      const items = SLS_STATUS_FIELDS.filter(f => detail[f.key] > 0);
+      if (!items.length) return '<span class="text-slate-400 text-[10px]">-</span>';
+      return `<div class="flex flex-wrap gap-0.5 justify-center max-w-[170px] mx-auto text-[10px]">` +
+        items.map(f => `<span class="inline-block border ${f.box} px-1 rounded font-semibold">${detail[f.key]} ${f.label}</span>`).join("") + `</div>`;
+    }
+
+    // Data cloud: kirim juga kolom status datar agar mudah ditulis ke Google Sheets
+    function slsCloudItems() {
+      return slsData.map(p => {
+        const d = getSlsDetail(p);
+        return Object.assign({}, p, d, { completed: d.complete, submitted: d.submit, rejected: d.reject, diolah: p.realisasi, assigned: p.target });
+      });
+    }
+
+    // Petugas yang belum punya nama di FASIH (baris "-" pada Excel)
+    let slsUnassigned = null;
+
+    function normPersonName(x) {
+      return String(x || "").toLowerCase().replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
+    }
+    function findSlsPetugasByName(name) {
+      const n = normPersonName(name);
+      if (!n || n === "-") return null;
+      return slsData.find(p => {
+        const m = normPersonName(p.nama);
+        return m === n || n.startsWith(m + " ") || m.startsWith(n + " ");
+      }) || null;
+    }
+
+    // Baca Excel format: PROVINSI | KABUPATEN | PENGAWAS | NAMA PENGAWAS | PENCACAH | NAMA PENCACAH | ASSIGNED | Open | Draft | DICACAH | Submit | Approve | Complete | Edit | Revoke | Reject | DIOLAH
+    function parseSlsPetugasRows(rows) {
+      const toNum = v => parseInt(v) || 0;
+      const blank = () => ({ target: 0, realisasi: 0, detail: Object.fromEntries(SLS_STATUS_FIELDS.map(f => [f.key, 0])) });
+      const byPpl = {};
+      const unassigned = blank();
+      let unassignedRows = 0;
+      const unmatched = [];
+      let total = 0, diolah = 0;
+      rows.forEach(r => {
+        const nama = (r["NAMA PENCACAH"] || "").toString().trim();
+        const rec = blank();
+        rec.target = toNum(r["ASSIGNED"]);
+        rec.realisasi = toNum(r["DIOLAH"]);
+        SLS_STATUS_FIELDS.forEach(f => { rec.detail[f.key] = toNum(r[f.key.toUpperCase()]); });
+        const p = findSlsPetugasByName(nama);
+        let dest;
+        if (p) { dest = byPpl[p.kodePpl] = byPpl[p.kodePpl] || blank(); }
+        else if (!nama || nama === "-") { dest = unassigned; unassignedRows++; }
+        else { unmatched.push(nama); return; }
+        dest.target += rec.target; dest.realisasi += rec.realisasi;
+        SLS_STATUS_FIELDS.forEach(f => { dest.detail[f.key] += rec.detail[f.key]; });
+        if (p) { total += rec.target; diolah += rec.realisasi; }
+      });
+      return { byPpl, unassigned, unassignedRows, unmatched, matched: Object.keys(byPpl).length, total, diolah };
+    }
+
     function initAppData() {
-      const storedSls = localStorage.getItem("PES_SLS_DATA_V7");
+      const storedSls = localStorage.getItem("PES_SLS_DATA_V8");
       const storedUbSampel = localStorage.getItem("PES_UB_SAMPEL_V7");
       const storedUbPetugas = localStorage.getItem("PES_UB_PETUGAS_V7");
 
       slsData = storedSls ? JSON.parse(storedSls) : JSON.parse(JSON.stringify(DEFAULT_SLS_PETUGAS));
+      try { const su = localStorage.getItem("PES_SLS_UNASSIGNED_V8"); slsUnassigned = su ? JSON.parse(su) : JSON.parse(JSON.stringify(DEFAULT_SLS_UNASSIGNED)); } catch (e) { slsUnassigned = JSON.parse(JSON.stringify(DEFAULT_SLS_UNASSIGNED)); }
       ubSampelData = storedUbSampel ? JSON.parse(storedUbSampel) : JSON.parse(JSON.stringify(DEFAULT_UB_SAMPEL));
       ubPetugasData = storedUbPetugas ? JSON.parse(storedUbPetugas) : JSON.parse(JSON.stringify(DEFAULT_UB_PETUGAS));
 
@@ -1960,7 +2155,8 @@
     }
 
     function saveAllData() {
-      localStorage.setItem("PES_SLS_DATA_V7", JSON.stringify(slsData));
+      localStorage.setItem("PES_SLS_DATA_V8", JSON.stringify(slsData));
+      if (slsUnassigned) localStorage.setItem("PES_SLS_UNASSIGNED_V8", JSON.stringify(slsUnassigned));
       localStorage.setItem("PES_UB_SAMPEL_V7", JSON.stringify(ubSampelData));
       localStorage.setItem("PES_UB_PETUGAS_V7", JSON.stringify(ubPetugasData));
     }
@@ -1968,9 +2164,9 @@
     // ==========================================
     // TANGGAL "UPDATE TERAKHIR" (OTOMATIS)
     // ==========================================
-    const LAST_UPDATE_KEY = "PES_LAST_UPDATE_V7";
+    const LAST_UPDATE_KEY = "PES_LAST_UPDATE_V8";
     // Nilai awal (tadinya statis) yang dipakai sampai ada pembaruan data pertama
-    const DEFAULT_LAST_UPDATE = "2026-11-05T12:00:00+07:00";
+    const DEFAULT_LAST_UPDATE = "2026-11-26T11:47:14+07:00";
     let lastUpdateISO = (function(){ try { return localStorage.getItem(LAST_UPDATE_KEY) || DEFAULT_LAST_UPDATE; } catch(e) { return DEFAULT_LAST_UPDATE; } })();
 
     function renderLastUpdate() {
@@ -2051,6 +2247,18 @@
       document.getElementById("dash-sls-target").textContent = slsTarget.toLocaleString("id-ID");
       document.getElementById("dash-sls-realisasi").textContent = slsRealisasi.toLocaleString("id-ID");
       document.getElementById("dash-sls-persen").textContent = slsPct + "%";
+      const tabBeban = document.getElementById("sls-tab-beban");
+      if (tabBeban) tabBeban.textContent = slsTarget.toLocaleString("id-ID");
+      const sumEl = document.getElementById("fasih-summary-text");
+      if (sumEl) {
+        const tot = {};
+        SLS_STATUS_FIELDS.forEach(f => tot[f.key] = 0);
+        slsData.forEach(p => { const d = getSlsDetail(p); SLS_STATUS_FIELDS.forEach(f => tot[f.key] += d[f.key]); });
+        const fmt = n => n.toLocaleString("id-ID");
+        let txt = `Data terintegrasi: ${fmt(slsTarget)} total beban penugasan SLS di ${slsData.length} petugas (${fmt(slsRealisasi)} Diolah, ${fmt(tot.dicacah)} Dicacah, ${fmt(tot.submit)} Submit, ${fmt(tot.approve)} Approve, ${fmt(tot.complete)} Complete, ${fmt(tot.draft)} Draft, ${fmt(tot.reject)} Reject, ${fmt(tot.open)} Open).`;
+        if (slsUnassigned && slsUnassigned.target > 0) txt += ` Belum ada petugas di FASIH: ${fmt(slsUnassigned.target)} beban (${fmt(slsUnassigned.realisasi)} diolah), tidak masuk hitungan di atas.`;
+        sumEl.textContent = txt;
+      }
 
       const ubTarget = ubSampelData.length;
       const ubDone = ubPetugasData.reduce((acc, cur) => acc + (parseInt(cur.realisasi) || 0), 0);
@@ -2181,8 +2389,8 @@
 
       if (filter === "ALL" || filter === "SLS") {
         slsData.forEach(p => {
-          const detail = p.fasihDetail || { completed: 0, submitted: 0, draft: 0, rejected: 0, open: 0 };
-          const pct = p.target > 0 ? (p.realisasi / p.target * 100).toFixed(1) : 0;
+          const detail = getSlsDetail(p);
+          const pct = slsPct(p);
           rows.push({
             tipe: "SLS",
             nama: p.nama,
@@ -2192,13 +2400,7 @@
             target: p.target,
             realisasi: p.realisasi,
             pct: pct,
-            detailBadge: `
-              <div class="text-[10px] space-y-0.5">
-                <span class="inline-block bg-emerald-100 text-emerald-800 px-1 rounded font-semibold">${detail.completed} Approved</span>
-                <span class="inline-block bg-blue-100 text-blue-800 px-1 rounded font-semibold">${detail.submitted} Submit</span>
-                <span class="inline-block bg-amber-100 text-amber-800 px-1 rounded">${detail.draft} Draft</span>
-              </div>
-            `,
+            detailBadge: slsStatusBadgesHtml(detail),
             hp: p.hp,
             id: p.kodePpl
           });
@@ -2290,8 +2492,8 @@
       });
 
       filtered.forEach(p => {
-        const detail = p.fasihDetail || { completed: 0, submitted: 0, draft: 0, rejected: 0, open: 0 };
-        const pct = p.target > 0 ? (p.realisasi / p.target * 100).toFixed(1) : 0;
+        const detail = getSlsDetail(p);
+        const pct = slsPct(p);
         let waNumber = p.hp.replace(/[^0-9]/g, '');
         if (waNumber.startsWith('0')) waNumber = '62' + waNumber.substring(1);
 
@@ -2308,15 +2510,20 @@
               <div class="text-right">
                 <span class="text-xs font-bold text-emerald-600 block">${p.realisasi} / ${p.target}</span>
                 <span class="text-[11px] font-bold text-indigo-600">${pct}% Selesai</span>
+                <span class="text-[10px] text-slate-400 block">Diolah / Beban</span>
               </div>
             </div>
 
-            <!-- FASIH Breakdown Pill -->
-            <div class="mt-3 bg-slate-50 border border-slate-100 rounded-xl p-2.5 flex items-center justify-between text-[11px]">
-              <span class="text-emerald-700 font-semibold" title="Disetujui PML">${detail.completed} Approved</span>
-              <span class="text-blue-700 font-semibold" title="Terkirim dari PCL">${detail.submitted} Submit</span>
-              <span class="text-amber-700 font-semibold" title="Draft di PCL">${detail.draft} Draft</span>
-              <span class="text-rose-700 font-semibold" title="Ditolak PML">${detail.rejected} Retur</span>
+            <!-- Progres: Selesai (DIOLAH) / Beban (ASSIGNED) -->
+            <div class="mt-3">
+              <div class="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                <div class="h-full bg-indigo-500 rounded-full" style="width:${Math.min(100, Number(pct))}%"></div>
+              </div>
+            </div>
+
+            <!-- Rincian Status FASIH -->
+            <div class="mt-3">
+              ${slsStatusGridHtml(detail)}
             </div>
 
             <!-- Alokasi SLS -->
@@ -2326,7 +2533,6 @@
                 <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
                   <div class="flex justify-between font-semibold text-slate-800">
                     <span>${a.kel} (${a.kec})</span>
-                    <span class="text-indigo-600 font-bold">${a.selesai || 0} / ${a.beban} Selesai</span>
                   </div>
                   <div class="text-[11px] text-slate-500 mt-0.5">SLS: ${a.sls} &bull; ID: ${a.idSls}</div>
                 </div>
@@ -2468,6 +2674,29 @@
       if (!rows || rows.length === 0) {
         alert("File Excel kosong!");
         return;
+      }
+
+      // Format SLS per petugas: ASSIGNED, Open..Reject, DIOLAH, NAMA PENCACAH
+      const normRows = rows.map(r => { const o = {}; Object.keys(r).forEach(k => { o[String(k).trim().toUpperCase()] = r[k]; }); return o; });
+      const looksSlsPetugas = normRows.some(r => r["NAMA PENCACAH"] !== undefined && r["ASSIGNED"] !== undefined && r["DIOLAH"] !== undefined);
+      if (looksSlsPetugas) {
+        const res = parseSlsPetugasRows(normRows);
+        if (res.matched > 0) {
+          pendingExcelPplSummary = { isSlsPetugas: true, byPpl: res.byPpl, unassigned: res.unassigned, total: res.total, diolah: res.diolah };
+          const pct = res.total > 0 ? (res.diolah / res.total * 100).toFixed(1) : "0.0";
+          const missing = slsData.filter(p => !res.byPpl[p.kodePpl]).map(p => p.nama);
+          document.getElementById("preview-filename").textContent = `File SLS: ${filename}`;
+          document.getElementById("preview-details").innerHTML = `
+            Terdeteksi Berkas Progres <strong>SLS per Petugas</strong> (${res.matched} dari ${slsData.length} petugas cocok).<br>
+            Beban (Assigned): <strong>${res.total.toLocaleString("id-ID")}</strong> &bull; Selesai (Diolah): <strong class="text-emerald-700">${res.diolah.toLocaleString("id-ID")}</strong> &bull; Progres: <strong>${pct}%</strong>.<br>
+            ${res.unassigned.target > 0 ? `Belum ada petugas (baris "-"): <strong>${res.unassigned.target}</strong> beban, ${res.unassigned.realisasi} diolah (disimpan terpisah).<br>` : ""}
+            ${res.unmatched.length ? `<span class="text-red-600 font-semibold">&#9888; Nama tidak cocok &amp; dilewati: ${res.unmatched.join(", ")}</span><br>` : ""}
+            ${missing.length ? `<span class="text-amber-700 font-semibold">&#9888; Petugas tidak ada di file (data lama dipertahankan): ${missing.join(", ")}</span>` : ""}
+          `;
+          document.getElementById("excel-preview-info").classList.remove("hidden");
+          document.getElementById("btn-apply-excel").disabled = false;
+          return;
+        }
       }
 
       // Cek apakah berkas adalah Rekap UB (punya kolom PENCACAH atau Assigned)
@@ -2633,6 +2862,43 @@
         return;
       }
 
+      if (pendingExcelPplSummary.isSlsPetugas) {
+        const S = pendingExcelPplSummary;
+        slsData.forEach(p => {
+          const x = S.byPpl[p.kodePpl];
+          if (x) {
+            p.target = x.target;
+            p.realisasi = x.realisasi;
+            p.fasihDetail = Object.assign({}, x.detail);
+          }
+        });
+        slsUnassigned = S.unassigned;
+
+        saveAllData();
+        touchLastUpdate();
+        renderDashboard();
+        renderSlsList();
+        renderQuickTable();
+
+        if (cloudGasUrl) {
+          try {
+            await postToCloud({ action: "sync_sls", items: slsCloudItems(), unassigned: slsUnassigned });
+            cloudMsg = "Data juga tersimpan di Google Sheets.";
+          } catch (err) {
+            console.warn("[Cloud] Gagal mengirim data SLS ke Google Sheets:", err);
+            cloudMsg = "PERINGATAN: GAGAL tersimpan ke Google Sheets (" + err.message + "). Data hanya ada di browser ini.";
+          }
+        }
+
+        closeModalImportExcel();
+        if (btnApply) {
+          btnApply.disabled = false;
+          btnApply.innerHTML = originalText || `<i class="ph-bold ph-check mr-1.5"></i> Terapkan Data FASIH`;
+        }
+        alert(`Berhasil memperbarui progres SLS dari Excel!\n${S.diolah.toLocaleString("id-ID")} diolah dari ${S.total.toLocaleString("id-ID")} beban penugasan.\n\n${cloudMsg}`);
+        return;
+      }
+
       const pSum = pendingExcelPplSummary.pplSummary;
       const sMap = pendingExcelPplSummary.slsMap;
 
@@ -2677,7 +2943,8 @@
         try {
           const payload = {
             action: "sync_sls",
-            items: slsData
+            items: slsCloudItems(),
+            unassigned: slsUnassigned
           };
           await postToCloud(payload);
           cloudMsg = "Data juga tersimpan di Google Sheets.";
@@ -2717,25 +2984,25 @@
       renderDashboard();
       renderSlsList();
       renderQuickTable();
-      if (cloudGasUrl) { postToCloud({ action: "sync_sls", items: slsData }).catch(e => alert("Tersimpan lokal, tapi gagal ke Google Sheets: " + e.message)); }
+      if (cloudGasUrl) { postToCloud({ action: "sync_sls", items: slsCloudItems(), unassigned: slsUnassigned }).catch(e => alert("Tersimpan lokal, tapi gagal ke Google Sheets: " + e.message)); }
       alert(`Data ${found.nama} berhasil diperbarui!`);
     }
 
     // EXPORT REKAP CSV
     function exportDataExcel() {
       let csvContent = "data:text/csv;charset=utf-8,";
-      csvContent += "KATEGORI,KODE,NAMA PETUGAS,PENGAWAS,NO HP,TARGET BEBAN,REALISASI SELESAI,PERSENTASE,APPROVED PML,SUBMIT PCL,DRAFT,REJECT,OPEN\n";
+      csvContent += "KATEGORI,KODE,NAMA PETUGAS,PENGAWAS,NO HP,BEBAN (ASSIGNED),SELESAI (DIOLAH),PERSENTASE,OPEN,DRAFT,DICACAH,SUBMIT,APPROVE,COMPLETE,EDIT,REVOKE,REJECT\n";
 
       slsData.forEach(p => {
-        const d = p.fasihDetail || { completed: 0, submitted: 0, draft: 0, rejected: 0, open: 0 };
-        const pct = p.target > 0 ? (p.realisasi / p.target * 100).toFixed(1) : 0;
-        csvContent += `SLS,${p.kodePpl},"${p.nama}","${p.pml}",${p.hp},${p.target},${p.realisasi},${pct}%,${d.completed},${d.submitted},${d.draft},${d.rejected},${d.open}\n`;
+        const d = getSlsDetail(p);
+        const pct = slsPct(p);
+        csvContent += `SLS,${p.kodePpl},"${p.nama}","${p.pml}",${p.hp},${p.target},${p.realisasi},${pct}%,${d.open},${d.draft},${d.dicacah},${d.submit},${d.approve},${d.complete},${d.edit},${d.revoke},${d.reject}\n`;
       });
 
       ubPetugasData.forEach(u => {
         const done = ubSampelData.filter(s => s.ppl === u.nama && s.status === "Sudah Berhasil Didata").length;
         const pct = u.target > 0 ? (done / u.target * 100).toFixed(1) : 0;
-        csvContent += `UB,PPL-UB,"${u.nama}","${u.pml}",${CONTACTS[u.nama]||'-'},${u.target},${done},${pct}%,${done},0,0,0,${u.target-done}\n`;
+        csvContent += `UB,PPL-UB,"${u.nama}","${u.pml}",${CONTACTS[u.nama]||'-'},${u.target},${done},${pct}%,${u.target-done},0,0,0,0,${done},0,0,0\n`;
       });
 
       const encodedUri = encodeURI(csvContent);
